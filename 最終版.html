@@ -1,0 +1,1087 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智能理財 - 終極修復版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f3f4f6;
+            overflow-x: hidden; /* 防止橫向滾動 */
+            padding-bottom: 80px; /* 避開底部導航 */
+            -webkit-text-size-adjust: 100%; /* 針對 Safari/Chrome */
+            text-size-adjust: 100%;         /* 標準語法 */
+        }
+        /* 模擬手機外框 */
+        .mobile-container {
+            max-width: 430px;
+            margin: 0 auto;
+            background-color: #fff;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        /* === 色系 === */
+        .bg-brand-peach { background-color: #FFE4D6; }
+        .text-brand-brown { color: #4A3B32; }
+        .bg-brand-orange { background-color: #D65A31; }
+        .text-brand-orange { color: #D65A31; }
+        .bg-light-gray { background-color: #F9FAFB; }
+        
+        /* === 動畫 === */
+        .card-shadow { box-shadow: 0 4px 12px rgba(214, 90, 49, 0.15); }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .progress-bar { transition: width 1.5s ease-in-out; width: 0%; }
+
+        /* === 頁面顯示控制 === */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .wealth-step { display: none; }
+        .wealth-step.active { display: block; }
+
+        /* === 導航按鈕狀態 === */
+        .nav-item.active { color: #D65A31; font-weight: bold; }
+        .nav-item.active i { transform: scale(1.1); transition: transform 0.2s; }
+
+        /* === DCI 幣別按鈕 (修復跑版關鍵) === */
+        .currency-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 8px; 
+            margin-bottom: 8px;
+        }
+        .curr-btn {
+            padding: 8px 2px; 
+            border-radius: 12px; 
+            border: 1px solid #e5e7eb;
+            font-size: 11px; 
+            font-weight: bold; 
+            color: #666; 
+            text-align: center;
+            transition: all 0.2s; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 2px;
+            background: white;
+        }
+        .curr-btn span.flag { font-size: 18px; line-height: 1; }
+        .curr-btn:active { transform: scale(0.95); }
+      
+              /* 遊戲化樣式 */
+        .badge-locked { filter: grayscale(100%); opacity: 0.5; }
+        .level-ring { width: 60px; height: 60px; border-radius: 50%; border: 4px solid #FFE4D6; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #D65A31; font-size: 18px; }
+        
+        /* 持有幣別選中 */
+        .curr-btn.active-base { background-color: #EFF6FF; border-color: #3B82F6; color: #1D4ED8; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2); }
+        /* 連結幣別選中 */
+        .curr-btn.active-linked { background-color: #FFF7ED; border-color: #D65A31; color: #D65A31; box-shadow: 0 2px 4px rgba(214, 90, 49, 0.2); }
+        /* 不可選 */
+        .curr-btn.disabled { opacity: 0.3; pointer-events: none; background-color: #f3f4f6; border-color: #eee; }
+
+        /* === 滑桿與 Checkbox === */
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; background: #ddd; border-radius: 5px; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #D65A31; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+
+        /* === Modal === */
+        .modal { position: fixed; bottom: 0; left: 0; right: 0; top: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; justify-content: center; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .modal.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: #fff; width: 100%; max-width: 430px; height: 85vh; border-top-left-radius: 20px; border-top-right-radius: 20px; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; overflow: hidden; }
+        .modal.active .modal-content { transform: translateY(0); }
+
+        /* === Success Animation === */
+        .checkmark-circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 2; stroke: #4bb71b; fill: none; animation: stroke 0.6s forwards; }
+        .checkmark { width: 56px; height: 56px; border-radius: 50%; display: block; stroke-width: 2; stroke: #fff; margin: 10% auto; box-shadow: inset 0px 0px 0px #7ac142; animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both; }
+        .checkmark__check { stroke-dasharray: 48; stroke-dashoffset: 48; animation: stroke 0.3s 0.8s forwards; }
+        @keyframes stroke { 100% { stroke-dashoffset: 0; } }
+        @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
+        @keyframes fill { 100% { box-shadow: inset 0px 0px 0px 30px #7ac142; } }
+      
+              /* 新增樣式：匯率氣象台 */
+        .thermometer-bar { height: 6px; border-radius: 3px; background: linear-gradient(to right, #4ade80, #fbbf24, #f87171); position: relative; }
+        .thermometer-point { position: absolute; top: -3px; width: 12px; height: 12px; background: white; border: 2px solid #333; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: left 0.5s; }
+        
+        /* 閃爍動畫 (Live) */
+        .live-dot { width: 6px; height: 6px; background-color: #22c55e; border-radius: 50%; display: inline-block; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="mobile-container">
+    
+    <header class="flex justify-between items-center p-4 bg-white sticky top-0 z-30 border-b border-gray-100 shadow-sm">
+        <div class="flex items-center gap-2">
+            <button id="back-btn" onclick="wealthGoBack()" class="hidden text-gray-500 mr-2 hover:bg-gray-100 p-1 rounded-full transition">
+                <i class="fa-solid fa-arrow-left text-lg"></i>
+            </button>
+            <div class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-200 overflow-hidden">
+    <img src="data:image/jpeg;base64,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" class="w-full h-full object-cover" alt="Hokii Logo">
+</div>
+            <span class="font-bold text-lg text-gray-800" id="header-title">智能理財 App</span>
+        </div>
+        <div class="flex gap-3 text-gray-600 items-center">
+             <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
+            <div class="w-8 h-8 rounded-full bg-gray-200 overflow-hidden border border-gray-100">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
+            </div>
+        </div>
+    </header>
+
+    <div id="view-overview" class="tab-content active fade-in">
+        <section class="p-4 bg-white mb-2">
+            <h2 class="text-gray-500 text-xs font-bold mb-3 tracking-wide">我的資產概況</h2>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <p class="text-gray-400 text-xs">總資產折合 (TWD)</p>
+                    <p class="text-2xl font-bold text-gray-800">NT$ 3,450,200</p>
+                </div>
+                <div class="bg-green-100 text-green-600 px-2 py-1 rounded text-xs font-bold">+2.4% <i class="fa-solid fa-arrow-trend-up"></i></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-light-gray p-3 rounded-xl border border-gray-100">
+                    <div class="flex items-center gap-2 mb-1"><div class="w-2 h-2 rounded-full bg-blue-500"></div><p class="text-xs text-gray-500">台幣存款</p></div>
+                    <p class="font-bold text-gray-800">2,120,000</p>
+                </div>
+                <div class="bg-light-gray p-3 rounded-xl border border-gray-100 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 bg-brand-orange text-white text-[10px] px-2 py-0.5 rounded-bl">AI 關注</div>
+                    <div class="flex items-center gap-2 mb-1"><div class="w-2 h-2 rounded-full bg-brand-orange"></div><p class="text-xs text-gray-500">外幣存款</p></div>
+                    <p class="font-bold text-gray-800">$ 42,500 <span class="text-[10px] text-gray-400">USD eqv</span></p>
+                </div>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-xl p-3 flex justify-between items-center shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-500">
+                        <i class="fa-solid fa-house-chimney"></i>
+                    </div>
+                    <div><p class="text-xs text-gray-500">房貸餘額</p><p class="text-sm font-bold text-gray-800">8,500,000</p></div>
+                </div>
+                <div class="h-8 w-px bg-gray-200"></div>
+                <div class="flex items-center gap-3 pr-2">
+                    <div class="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-500">
+                        <i class="fa-regular fa-credit-card"></i>
+                    </div>
+                    <div><p class="text-xs text-gray-500">本期卡費</p><p class="text-sm font-bold text-gray-800">24,500</p></div>
+                </div>
+            </div>
+        </section>
+
+         <section class="p-4 bg-primary-peach relative overflow-hidden">
+             <div class="absolute -right-6 -top-6 w-24 h-24 bg-white opacity-40 rounded-full blur-xl"></div>
+            <div class="flex justify-between items-end mb-2 relative z-10">
+                <div>
+                    <h2 class="text-brand-brown text-sm font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i> 資金水位分析
+                    </h2>
+                    <p class="text-[10px] text-gray-600 mt-1">過去 12 個月餘額波動</p>
+                </div>
+                <span class="bg-white text-brand-orange text-[10px] font-bold px-2 py-1 rounded border border-gray-200">
+                    評級：極穩健
+                </span>
+            </div>
+            <div class="bg-white p-2 rounded-xl shadow-sm mb-3 relative z-10 h-48">
+                <canvas id="liquidityChart"></canvas>
+            </div>
+            <div class="bg-white bg-opacity-60 p-2 rounded-lg border border-white border-opacity-50 relative z-10 text-center">
+                <p class="text-[10px] text-gray-600">
+                    <span class="text-gray-400">●</span> 灰色虛線為 <strong>AI 安全水位線 (30萬)</strong>，此線以下資金未曾動用。
+                </p>
+            </div>
+        </section>
+
+        <section class="p-4 bg-white">
+            <h2 class="text-gray-500 text-xs font-bold mb-3 tracking-wide">未來 30 天收支預測</h2>
+            <div class="flex justify-between gap-2">
+                <div class="flex-1 bg-gray-50 p-2 rounded-lg text-center border border-gray-100 opacity-50">
+                    <p class="text-[10px] text-gray-400">5號 (已扣)</p>
+                    <i class="fa-solid fa-house text-gray-400 my-1"></i>
+                    <p class="text-xs font-bold text-gray-500">房貸</p>
+                </div>
+                 <div class="flex-1 bg-white p-2 rounded-lg text-center border border-brand-orange shadow-sm">
+                    <p class="text-[10px] text-brand-orange font-bold">目前區間</p>
+                    <i class="fa-solid fa-bullseye text-brand-orange my-1 text-xl"></i>
+                    <p class="text-xs font-bold text-gray-800">閒置波段</p>
+                </div>
+                <div class="flex-1 bg-blue-50 p-2 rounded-lg text-center border border-blue-100">
+                    <p class="text-[10px] text-blue-400">25號 (入帳)</p>
+                    <i class="fa-solid fa-sack-dollar text-blue-500 my-1"></i>
+                    <p class="text-xs font-bold text-gray-800">薪資</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="view-wealth" class="tab-content fade-in">
+        
+        <div id="wealth-step-1" class="wealth-step active p-4">
+            <h2 class="text-gray-700 font-bold text-lg mb-4">理財商品專區</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:bg-gray-50 transition"><div class="w-12 h-12 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-xl"><i class="fa-solid fa-layer-group"></i></div><span class="font-bold text-gray-700">基金</span></div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:bg-gray-50 transition"><div class="w-12 h-12 rounded-full bg-green-100 text-green-500 flex items-center justify-center text-xl"><i class="fa-solid fa-file-contract"></i></div><span class="font-bold text-gray-700">海外債</span></div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:bg-gray-50 transition"><div class="w-12 h-12 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center text-xl"><i class="fa-solid fa-chart-line"></i></div><span class="font-bold text-gray-700">ETF</span></div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:bg-gray-50 transition"><div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center text-xl"><i class="fa-solid fa-coins"></i></div><span class="font-bold text-gray-700">黃金</span></div>
+                
+                <div onclick="wealthNavigate(2, '組合式商品')" class="col-span-2 bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-xl shadow-md flex justify-between items-center cursor-pointer text-white group active:scale-95 transition">
+                    <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xl text-brand-orange"><i class="fa-solid fa-cube"></i></div><div><span class="font-bold text-lg block">組合式商品</span><span class="text-xs text-gray-400">Structured Products</span></div></div><i class="fa-solid fa-chevron-right text-gray-500 group-hover:text-white transition"></i>
+                </div>
+            </div>
+        </div>
+
+        <div id="wealth-step-2" class="wealth-step p-4">
+            <p class="text-gray-500 text-xs mb-4">請選擇商品類型：</p>
+            <div class="space-y-3">
+                <div onclick="wealthNavigate(3, '雙幣投資 DCI')" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center cursor-pointer hover:border-brand-orange transition active:bg-orange-50">
+                    <div class="flex items-center gap-3"><div class="w-10 h-10 rounded bg-orange-100 text-brand-orange flex items-center justify-center font-bold">DCI</div><div><p class="font-bold text-gray-800">雙元貨幣投資</p><p class="text-xs text-gray-500">自選雙幣・高息收</p></div></div><i class="fa-solid fa-angle-right text-gray-300"></i>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center cursor-pointer hover:border-blue-500 transition active:bg-blue-50">
+                    <div class="flex items-center gap-3"><div class="w-10 h-10 rounded bg-blue-100 text-blue-600 flex items-center justify-center font-bold">PGN</div><div><p class="font-bold text-gray-800">保本型債券</p><p class="text-xs text-gray-500">本金保障</p></div></div><i class="fa-solid fa-angle-right text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+
+        <div id="wealth-step-3" class="wealth-step pb-24 p-4">
+            <div class="space-y-5">
+                
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-sm font-bold text-gray-700"><i class="fa-solid fa-coins text-brand-orange mr-1"></i> 自選雙幣組合</h3>
+                        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">排除 TWD</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-2 mb-1"><p class="text-xs text-blue-600 font-bold">1. 持有幣別 (Base)</p></div>
+                    <div class="currency-grid" id="base-curr-list"></div>
+                    
+                    <div class="flex justify-between items-center mt-3 mb-1"><p class="text-xs text-brand-orange font-bold">2. 連結幣別 (Linked)</p></div>
+                    <div class="currency-grid" id="linked-curr-list"></div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">投資金額 (<span class="base-symbol font-bold">$</span>)</label>
+                    <div class="relative">
+                        <span class="absolute left-0 bottom-2 text-2xl font-bold text-gray-400 base-symbol">$</span>
+                        <input type="number" id="dci-amount" value="10000" oninput="calcDCI()" class="w-full pl-8 text-3xl font-bold text-brand-orange border-b-2 border-gray-200 focus:border-brand-orange focus:outline-none bg-transparent pb-1">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">投資天期</label>
+                    <div class="flex gap-2">
+                        <button onclick="setTenor(7, this)" class="tenor-btn flex-1 py-2 border rounded-lg text-sm active-tenor bg-gray-800 text-white transition">7天</button>
+                        <button onclick="setTenor(14, this)" class="tenor-btn flex-1 py-2 border rounded-lg text-sm text-gray-600 bg-white transition">14天</button>
+                        <button onclick="setTenor(30, this)" class="tenor-btn flex-1 py-2 border rounded-lg text-sm text-gray-600 bg-white transition">1個月</button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm font-bold text-gray-700">轉換匯率 (Strike)</label>
+                        <span class="bg-blue-100 text-blue-600 text-[10px] px-2 py-1 rounded font-bold" id="protection-badge">...</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 mb-3">
+                        <span>參考市價 <span id="pair-name"></span>: <strong id="spot-rate">...</strong></span>
+                        <span>目標: <strong id="strike-rate" class="text-brand-orange text-lg">...</strong></span>
+                    </div>
+                    <input type="range" id="strike-slider" min="0" max="100" value="50" class="w-full mb-2" oninput="calcDCI()">
+                    <div class="flex justify-between text-[10px] text-gray-400"><span>保守 (低險)</span><span>積極 (高利)</span></div>
+                </div>
+
+                <div>
+                    <div class="flex items-end gap-2 mb-2"><p class="text-gray-500 text-sm">年化收益率 (Yield)</p><p class="text-4xl font-bold text-brand-orange" id="dci-yield">0.00%</p></div>
+                    <div class="space-y-3">
+                        <div class="bg-white border border-green-200 rounded-lg p-3 shadow-sm relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500"></div>
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-xs text-gray-500">情境一：匯率持穩</p><p class="text-[10px] text-gray-400">拿回 <span class="base-code font-bold"></span> 本金+息</p></div>
+                                <span class="font-bold text-green-600 text-lg" id="res-best">...</span>
+                            </div>
+                        </div>
+                        <div class="bg-white border border-blue-200 rounded-lg p-3 shadow-sm relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-xs text-gray-500">情境二：被轉換</p><p class="text-[10px] text-gray-400">轉換為 <span class="linked-code font-bold text-brand-orange"></span></p></div>
+                                <span class="font-bold text-blue-600 text-lg" id="res-worst">...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="showSuccess('simulate')" class="py-3 rounded-lg font-bold border border-brand-orange text-brand-orange hover:bg-orange-50 transition">模擬交易</button>
+                    <button onclick="showSuccess('buy')" class="py-3 rounded-lg font-bold bg-brand-orange text-white shadow-lg hover:bg-orange-600 active:scale-95 transition">確認申購</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-ai" class="tab-content fade-in">
+        
+        <section class="bg-primary-peach px-6 py-8 relative overflow-hidden">
+            <div class="absolute top-[-20px] right-[-20px] w-24 h-24 bg-white opacity-30 rounded-full"></div>
+            <div class="relative z-10">
+                <h1 class="text-2xl font-bold text-brand-brown mb-2">AI 市場雷達偵測中...</h1>
+                <p class="text-gray-600 text-sm mb-6">專屬您的結構型商品策略已生成</p>
+                <button class="bg-brand-orange text-white px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 hover:bg-orange-700 transition">
+                    查看 AI 建議 <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            <div class="absolute -bottom-2 right-1 w-20 h-20">
+    <img src="https://camp.tbb.com.tw/assets/gcs/E80D0A6B-B187-450F-B537-3920E09B2BF1/D7AEAE7C-B4A3-428A-A962-B9394E8554A2/20250626092315_2025SPHokii01.png" class="w-full h-full object-contain drop-shadow-md" alt="Hokii AI">
+</div>
+        </section>
+
+        <div class="p-4 space-y-4">
+            <div class="bg-white p-5 rounded-2xl card-shadow">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-brand-orange"></i> 市場訊號：即將降息
+                    </h3>
+                    <span class="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full font-bold">高確信度</span>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg mb-3 border border-gray-100">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>FedWatch 9月降息機率</span>
+                        <span class="font-bold text-gray-800">82%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-brand-orange h-2.5 rounded-full progress-bar" style="width: 82%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">
+                        <i class="fa-solid fa-circle-info"></i> 模型預測美元利率即將下跌，建議現在鎖定高利。
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl card-shadow">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-wallet text-blue-500"></i> 資產診斷
+                    </h3>
+                </div>
+                <div class="flex gap-3">
+                    <div class="flex-1">
+                        <p class="text-sm text-gray-500">偵測到閒置資金</p>
+                        <p class="text-xl font-bold text-gray-800">¥ 300,000 <span class="text-xs text-gray-400">CNY</span></p>
+                        <p class="text-xs text-orange-600 mt-1"><i class="fa-solid fa-triangle-exclamation"></i> 已閒置 > 90 天</p>
+                    </div>
+                    <div class="flex-1 border-l pl-3 border-gray-200">
+                        <p class="text-xs text-gray-500 mb-1">最佳化建議</p>
+                        <p class="text-xs leading-relaxed text-gray-700">目前 <strong>USD/CNY</strong> 波動率高，轉換成本低。建議以人民幣承作。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-2xl card-shadow text-white relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-brand-orange text-xs font-bold px-3 py-1 rounded-bl-lg">AI 精選推薦</div>
+                <h2 class="text-lg font-bold mb-1">雙元貨幣投資 (DCI)</h2>
+                <p class="text-gray-400 text-xs mb-4">連結標的：USD / CNY</p>
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <p class="text-gray-400 text-xs">預估年化收益率</p>
+                        <p class="text-3xl font-bold text-brand-orange">6.50%</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-gray-400 text-xs">投資期間</p>
+                        <p class="text-xl font-bold">1 個月</p>
+                    </div>
+                </div>
+                <div class="bg-gray-700 bg-opacity-50 p-3 rounded-lg text-xs text-gray-300 mb-4">
+                    <ul class="space-y-1">
+                        <li><i class="fa-solid fa-check text-green-400 mr-1"></i> 若匯率持穩：獲得 6.5% 利息</li>
+                        <li><i class="fa-solid fa-check text-green-400 mr-1"></i> 若 CNY 貶值：以您設定的轉換匯率換成 USD</li>
+                    </ul>
+                </div>
+                <button onclick="openModal()" class="w-full bg-brand-orange text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition flex justify-center items-center gap-2 shadow-lg ring-2 ring-orange-300 ring-opacity-50 active:scale-95">
+                    一鍵試算與申購 <i class="fa-solid fa-calculator"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+   
+   <div id="view-accounts" class="tab-content fade-in">
+        
+        <section class="bg-white p-6 border-b border-gray-100">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="level-ring">Lv.5</div>
+                <div class="flex-1">
+                    <h2 class="text-xl font-bold text-brand-brown">王小明 <span class="text-xs text-gray-400 font-normal">保守型投資人</span></h2>
+                    <div class="flex justify-between text-xs text-gray-500 mb-1"><span>經驗值 2,450 / 3,000</span><span>還差 550 升級</span></div>
+                    <div class="w-full bg-gray-100 rounded-full h-2"><div class="bg-brand-orange h-2 rounded-full" style="width: 80%"></div></div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between gap-2">
+                <div class="flex-1 bg-gray-50 p-3 rounded-xl text-center border border-gray-100">
+                    <p class="text-xs text-gray-500 mb-1">持有代幣</p>
+                    <p class="text-xl font-bold text-brand-orange"><i class="fa-solid fa-coins mr-1"></i>1,250</p>
+                    <button class="text-[10px] bg-brand-orange text-white px-2 py-0.5 rounded mt-1">兌換好禮</button>
+                </div>
+                <div class="flex-1 bg-gray-50 p-3 rounded-xl text-center border border-gray-100">
+                    <p class="text-xs text-gray-500 mb-1">本月成就</p>
+                    <p class="text-xl font-bold text-gray-700">3 <span class="text-xs font-normal">/ 5</span></p>
+                    <p class="text-[10px] text-gray-400 mt-1">連續登入 7 天</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="p-4">
+            <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center"><i class="fa-solid fa-bell text-brand-orange mr-2"></i> 智能管家通知</h3>
+            <div class="space-y-3">
+                <div class="bg-white p-4 rounded-xl border-l-4 border-red-500 shadow-sm flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-red-500 font-bold mb-1">即將到期 (3天)</p>
+                        <p class="font-bold text-gray-800 text-sm">DCI 雙元貨幣 (AUD/USD)</p>
+                        <p class="text-[10px] text-gray-500">目前匯率 0.6520 (接近轉換價)</p>
+                    </div>
+                    <button class="bg-red-50 text-red-500 text-xs px-3 py-2 rounded-lg font-bold">檢視</button>
+                </div>
+                <div class="bg-white p-4 rounded-xl border-l-4 border-yellow-400 shadow-sm flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-yellow-600 font-bold mb-1">市場波動提醒</p>
+                        <p class="font-bold text-gray-800 text-sm">美聯準會即將公佈利率</p>
+                        <p class="text-[10px] text-gray-500">建議重新檢視美元部位</p>
+                    </div>
+                    <button class="bg-yellow-50 text-yellow-600 text-xs px-3 py-2 rounded-lg font-bold">模擬</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="p-4 bg-white mt-2">
+            <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center"><i class="fa-solid fa-users text-blue-500 mr-2"></i> 同儕投資情報</h3>
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <p class="text-xs text-gray-600 mb-3 leading-relaxed">
+                    與您風險屬性相近的投資人中，有 <strong class="text-brand-orange">72%</strong> 正在關注 <strong class="text-gray-800">日圓反彈</strong> 相關的結構型商品。
+                </p>
+                <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 72%"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-gray-400">
+                    <span>少數</span>
+                    <span>多數</span>
+                </div>
+                <button onclick="wealthNavigate(2, '組合式商品')" class="w-full mt-3 border border-blue-200 text-blue-600 text-xs font-bold py-2 rounded-lg hover:bg-blue-50">查看相關商品</button>
+            </div>
+        </section>
+
+        <section class="p-4">
+            <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-1 shadow-lg cursor-pointer" onclick="openChallengeModal()">
+                <div class="bg-white bg-opacity-10 backdrop-blur-sm p-4 rounded-lg text-white">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded">本週挑戰</span>
+                            <h3 class="font-bold text-lg mt-1">非農數據大預測</h3>
+                        </div>
+                        <i class="fa-solid fa-trophy text-2xl text-yellow-300"></i>
+                    </div>
+                    <p class="text-xs text-gray-100 mb-3">模擬市場劇烈波動，測試您的資產配置抗壓性。優勝者獲 500 點！</p>
+                    <div class="flex items-center gap-2 text-[10px]">
+                        <div class="flex -space-x-2">
+                            <div class="w-6 h-6 rounded-full bg-gray-300 border border-white"></div>
+                            <div class="w-6 h-6 rounded-full bg-gray-400 border border-white"></div>
+                            <div class="w-6 h-6 rounded-full bg-gray-500 border border-white"></div>
+                        </div>
+                        <span>3,420 人已參加</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="p-4 bg-white pb-24">
+            <h3 class="text-sm font-bold text-gray-700 mb-3">我的成就</h3>
+            <div class="grid grid-cols-4 gap-2 text-center">
+                <div class="flex flex-col items-center gap-1">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 text-xl"><i class="fa-solid fa-medal"></i></div>
+                    <span class="text-[10px] text-gray-600">首購族</span>
+                </div>
+                <div class="flex flex-col items-center gap-1">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl"><i class="fa-solid fa-graduation-cap"></i></div>
+                    <span class="text-[10px] text-gray-600">好學</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 opacity-50">
+                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 text-xl"><i class="fa-solid fa-crown"></i></div>
+                    <span class="text-[10px] text-gray-600">交易王</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 opacity-50">
+                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 text-xl"><i class="fa-solid fa-fire"></i></div>
+                    <span class="text-[10px] text-gray-600">連勝</span>
+                </div>
+            </div>
+        </section>
+    </div>
+    <div id="view-rates" class="tab-content  fade-in">
+        
+        <section class="p-4 bg-white border-b border-gray-100">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-gray-700 font-bold flex items-center gap-2"><i class="fa-solid fa-earth-americas text-brand-orange"></i> 貨幣強弱氣象台</h2>
+                <span class="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-full"><span class="live-dot mr-1"></span>AI 實時運算</span>
+            </div>
+        
+         
+            
+            <div class="bg-gradient-to-r from-green-50 to-white p-3 rounded-xl border border-green-100 mb-3 shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="flex items-center gap-2">
+                        <img src="https://flagcdn.com/w40/jp.png" class="w-6 h-4 rounded shadow-sm">
+                        <span class="font-bold text-gray-800">JPY 日圓</span>
+                    </div>
+                    <span class="text-green-600 font-bold text-sm">0.2105 <i class="fa-solid fa-arrow-turn-down"></i></span>
+                </div>
+                
+                <div class="mb-2">
+                    <div class="flex justify-between text-[10px] text-gray-400 mb-1"><span>超跌 (買點)</span><span>中立</span><span>超漲 (賣點)</span></div>
+                    <div class="thermometer-bar"><div class="thermometer-point" style="left: 15%;"></div></div>
+                </div>
+
+                <div class="bg-white bg-opacity-60 p-2 rounded border border-green-100 flex gap-2 items-start">
+                    <i class="fa-solid fa-plane-departure text-green-500 mt-0.5 text-xs"></i>
+                    <p class="text-[10px] text-gray-600 leading-tight">
+                        <strong>哈日族注意：</strong>目前匯率處於 5 年低點。現在換 5 萬台幣，比半年前多吃 <strong class="text-green-600">12 碗一蘭拉麵</strong> 🍜。
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-red-50 to-white p-3 rounded-xl border border-red-100 shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="flex items-center gap-2">
+                        <img src="https://flagcdn.com/w40/us.png" class="w-6 h-4 rounded shadow-sm">
+                        <span class="font-bold text-gray-800">USD 美元</span>
+                    </div>
+                    <span class="text-red-500 font-bold text-sm">32.45 <i class="fa-solid fa-arrow-trend-up"></i></span>
+                </div>
+                
+                <div class="mb-2">
+                    <div class="thermometer-bar"><div class="thermometer-point" style="left: 85%;"></div></div>
+                </div>
+
+                <div class="bg-white bg-opacity-60 p-2 rounded border border-red-100 flex gap-2 items-start">
+                    <i class="fa-solid fa-chart-line text-red-500 mt-0.5 text-xs"></i>
+                    <p class="text-[10px] text-gray-600 leading-tight">
+                        <strong>強勢美元：</strong>主要受 Fed 降息預期延後影響。建議持有美元定存或承作 <a href="#" onclick="alert('跳轉至 DCI')" class="text-brand-orange underline">DCI</a> 賺取高利。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="p-4">
+            <h2 class="text-gray-700 font-bold mb-3 flex items-center gap-2"><i class="fa-solid fa-sack-dollar text-brand-orange"></i> 尋息地圖 (USD)</h2>
+            <div class="space-y-2">
+                
+                <div class="flex items-center gap-3">
+                    <div class="w-16 text-right text-xs text-gray-500">一般活存</div>
+                    <div class="flex-1 h-8 bg-gray-200 rounded-r-full relative flex items-center">
+                        <div class="bg-gray-400 h-full rounded-r-full flex items-center px-2 text-white text-xs font-bold" style="width: 15%">0.8%</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <div class="w-16 text-right text-xs text-gray-500 font-bold text-brand-brown">優利定存</div>
+                    <div class="flex-1 h-8 bg-gray-100 rounded-r-full relative flex items-center">
+                        <div class="bg-brand-orange h-full rounded-r-full flex items-center px-2 text-white text-xs font-bold shadow" style="width: 50%">4.5%</div>
+                        <span class="ml-2 text-[10px] text-gray-400">熱門 🔥</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3" onclick="alert('前往 DCI 頁面')">
+                    <div class="w-16 text-right text-xs text-brand-orange font-bold">DCI 雙幣</div>
+                    <div class="flex-1 h-10 bg-orange-50 border border-brand-orange rounded-r-full relative flex items-center cursor-pointer">
+                        <div class="bg-gradient-to-r from-orange-500 to-red-500 h-full rounded-r-full flex items-center px-2 text-white text-xs font-bold shadow-lg animate-pulse" style="width: 85%">8.5%*</div>
+                        <i class="fa-solid fa-chevron-right absolute right-2 text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+                <p class="text-[10px] text-gray-400 text-right">*DCI 為非保本商品，依匯率波動而定</p>
+            </div>
+        </section>
+
+        <section class="px-4 pb-24">
+            <div class="bg-gray-800 rounded-xl p-4 text-white flex justify-between items-center shadow-lg">
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">智能盯盤</p>
+                    <p class="font-bold text-sm">設定您的目標匯率</p>
+                    <p class="text-[10px] text-gray-400">AI 將在價格觸及時，第一時間通知您</p>
+                </div>
+                <button class="bg-brand-orange text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-orange-600 transition">
+                    <i class="fa-solid fa-plus"></i> 新增
+                </button>
+            </div>
+        </section>
+
+    </div>
+
+    <nav class="fixed bottom-0 w-full max-w-[430px] bg-white border-t border-gray-200 flex justify-around py-3 text-xs text-gray-500 z-50">
+        <div class="flex flex-col items-center gap-1 nav-item active" onclick="switchTab('view-overview', this)"><i class="fa-solid fa-chart-pie text-lg"></i><span>總覽</span></div>
+        <div class="flex flex-col items-center gap-1 nav-item" onclick="switchTab('view-rates', this)"><i class="fa-solid fa-sack-dollar text-lg"></i><span>匯利率</span></div>
+        <div class="flex flex-col items-center gap-1 relative nav-item" onclick="switchTab('view-ai', this)">
+            <div class="absolute -top-8 bg-brand-orange w-14 h-14 rounded-full flex items-center justify-center border-4 border-white shadow-lg"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=TBB" class="w-8 h-8" alt="AI"></div><span class="mt-7 font-bold text-brand-orange">AI 推薦</span>
+        </div>
+        <div class="flex flex-col items-center gap-1 nav-item" onclick="switchTab('view-wealth', this)"><i class="fa-solid fa-file-invoice-dollar text-lg"></i><span>理財</span></div>
+        <div class="flex flex-col items-center gap-1 nav-item" onclick="switchTab('view-accounts', this)"><i class="fa-solid fa-user text-lg"></i><span>帳務</span></div>
+    </nav>
+
+    <div id="aiModal" class="modal">
+        <div class="modal-content">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20">
+                <button onclick="closeAIModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-chevron-down text-xl"></i></button>
+                <h3 class="font-bold text-gray-800">AI 快速試算</h3><div class="w-6"></div>
+            </div>
+            <div class="p-5 overflow-y-auto pb-24">
+                <div class="mb-6"><label class="block text-sm font-bold text-gray-700 mb-2">投資金額 (CNY)</label><input type="number" id="aiInvestAmount" value="300000" oninput="updateAIcalc()" class="w-full text-2xl font-bold text-brand-brown border-b-2 border-brand-orange focus:outline-none py-2 bg-transparent"></div>
+                <div class="bg-gray-50 p-4 rounded-xl mb-6"><div class="flex justify-between items-center mb-4"><span>市價 7.25</span><span>Strike <strong id="aiStrikeDisplay" class="text-brand-orange">7.15</strong></span></div><input type="range" id="aiStrikeSlider" min="7.05" max="7.24" step="0.01" value="7.15" oninput="updateAIcalc()"></div>
+                <div class="mb-6"><div class="flex items-baseline gap-2 mb-4"><span class="text-4xl font-bold text-brand-orange" id="aiYieldDisplay">6.50%</span><span class="text-sm text-gray-500">年化</span></div><p class="text-xs text-gray-500">情境一：¥ <span id="aiScenarioA">...</span> | 情境二：$ <span id="aiScenarioB">...</span> USD</p></div>
+                <div class="p-4 bg-white border-t border-gray-100 absolute bottom-0 w-full"><button onclick="showSuccess('buy')" class="w-full bg-brand-orange text-white font-bold py-3 rounded-lg shadow-lg">確認申購</button></div>
+            </div>
+        </div>
+    </div>
+  
+    <div id="challengeModal" class="modal">
+        <div class="modal-content bg-gradient-to-b from-purple-900 to-gray-900 text-white">
+            <div class="p-4 flex justify-end"><button onclick="document.getElementById('challengeModal').classList.remove('active')" class="text-white opacity-50 text-2xl">&times;</button></div>
+            <div class="p-6 text-center mt-10">
+                <i class="fa-solid fa-gamepad text-6xl text-yellow-400 mb-4 animate-bounce"></i>
+                <h2 class="text-2xl font-bold mb-2">市場模擬挑戰</h2>
+                <p class="text-gray-300 text-sm mb-8">情境：若聯準會意外升息 2 碼，您的債券部位將如何變動？請在 30 秒內做出決策。</p>
+                <button onclick="startChallenge()" class="w-full bg-yellow-400 text-purple-900 font-bold py-4 rounded-full shadow-lg text-lg hover:bg-yellow-300 transition">開始挑戰</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="successOverlay" class="fixed inset-0 bg-white z-[200] hidden flex-col items-center justify-center text-center p-6">
+        <div class="checkmark-circle"><svg class="checkmark" viewBox="0 0 52 52"><circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/><path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/></svg></div>
+        <h2 class="text-2xl font-bold text-gray-800 mt-4 mb-2" id="success-title">指令已送出</h2>
+        <p class="text-gray-500 text-sm mb-8" id="success-msg">AI 將為您監控市場。</p>
+        <button onclick="resetToHome()" class="bg-gray-100 text-gray-700 font-bold py-3 px-10 rounded-full hover:bg-gray-200">返回首頁</button>
+    </div>
+
+</div>
+
+ <div id="calculationModal" class="modal">
+        <div class="modal-content">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20">
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-chevron-down text-xl"></i></button>
+                <h3 class="font-bold text-gray-800">自訂試算條件</h3>
+                <div class="w-6"></div>
+            </div>
+            <div class="p-5 overflow-y-auto pb-24">
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">投資金額 (CNY)</label>
+                    <div class="relative">
+                        <input type="number" id="investAmount" value="300000" oninput="updateCalculation()" class="w-full text-2xl font-bold text-brand-brown border-b-2 border-brand-orange focus:outline-none py-2 bg-transparent placeholder-gray-300">
+                        <span class="absolute right-0 bottom-3 text-gray-500 font-medium">元</span>
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="setAmount(100000)" class="text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-600 hover:bg-gray-200">10萬</button>
+                        <button onclick="setAmount(300000)" class="text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-600 hover:bg-gray-200">30萬</button>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <div><p class="text-xs text-gray-500">目前市價 Spot</p><p class="font-bold text-gray-800">7.2500</p></div>
+                        <div class="text-right"><p class="text-xs text-gray-500">目標 Strike</p><p class="font-bold text-brand-orange text-lg" id="strikeDisplay">7.1500</p></div>
+                    </div>
+                    <input type="range" id="strikeSlider" min="7.0500" max="7.2400" step="0.0100" value="7.1500" oninput="updateCalculation()">
+                    <div class="flex justify-between text-[10px] text-gray-400 mt-2"><span>保守</span><span>積極</span></div>
+                </div>
+                <div class="mb-6">
+                    <div class="flex justify-between items-end mb-2"><h4 class="font-bold text-gray-700">預估收益</h4><span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">30天</span></div>
+                    <div class="flex items-baseline gap-2 mb-4"><span class="text-4xl font-bold text-brand-orange" id="yieldDisplay">6.50%</span><span class="text-sm text-gray-500">年化報酬率</span></div>
+                    <div class="space-y-3">
+                        <div class="bg-white border border-green-200 rounded-lg p-3 shadow-sm relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-400"></div>
+                            <div class="flex justify-between items-center"><span class="font-bold text-gray-800">拿回本金 + 利息</span><span class="font-bold text-green-600" id="scenarioA_Result">¥ 301,602 CNY</span></div>
+                        </div>
+                        <div class="bg-white border border-blue-200 rounded-lg p-3 shadow-sm relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-400"></div>
+                            <div class="flex justify-between items-center"><span class="font-bold text-gray-800">轉換為美元</span><span class="font-bold text-blue-600" id="scenarioB_Result">$ 42,182 USD</span></div>
+                            <p class="text-[10px] text-gray-400 mt-1">有效換匯價：<span id="effectiveRate">7.1120</span></p>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-[10px] text-gray-400 text-center mb-4">*不保本商品具有匯率風險。</p>
+            </div>
+            <div class="p-4 bg-white border-t border-gray-100 absolute bottom-0 w-full">
+                <button onclick="showSuccess()" class="w-full bg-brand-orange text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition">確認申購 (¥ <span id="btnAmount">300,000</span>)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="successOverlay" class="fixed inset-0 bg-white z-[200] hidden flex-col items-center justify-center text-center p-6">
+        <div class="checkmark-circle"><svg class="checkmark" viewBox="0 0 52 52"><circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/><path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/></svg></div>
+        <h2 class="text-2xl font-bold text-gray-800 mt-4 mb-2">申購指令已送出</h2>
+        <p class="text-gray-500 text-sm mb-8">AI 將為您監控市場。</p>
+        <button onclick="location.reload()" class="bg-gray-100 text-gray-700 font-bold py-3 px-10 rounded-full hover:bg-gray-200">返回首頁</button>
+    </div>
+</div>
+
+<script>
+
+    // === Tab 切換邏輯 ===
+    function switchTab(tabId, navElement) {
+        // 1. 隱藏所有 Tab 內容
+        document.querySelectorAll('.tab-content').forEach(el => {
+            el.classList.remove('active');
+        });
+        // 2. 顯示目標 Tab
+        document.getElementById(tabId).classList.add('active');
+        
+        // 3. 更新 Nav 樣式
+        document.querySelectorAll('.nav-item').forEach(el => {
+            el.classList.remove('active');
+            // 移除特定顏色 (重置)
+            const textSpan = el.querySelector('span');
+            if(textSpan) textSpan.classList.remove('text-brand-orange');
+        });
+        navElement.classList.add('active');
+        
+        // 特殊處理 AI 推薦按鈕的文字顏色 (因為結構不同)
+        if(tabId === 'view-ai') {
+            navElement.querySelector('span').classList.add('text-brand-orange');
+        }
+
+        // 4. 更新 Header 標題 (可選)
+        const titles = {
+            'view-overview': '總資產概況',
+            'view-ai': 'AI 智能推薦',
+            'view-rates': '匯率與利率',
+            'view-wealth': '理財商品',
+            'view-accounts': '個人帳務'
+        };
+        document.getElementById('header-title').innerText = titles[tabId];
+    }
+
+    // === Chart.js 繪圖 (資金水位) ===
+    document.addEventListener('DOMContentLoaded', () => {
+        const ctx = document.getElementById('liquidityChart').getContext('2d');
+        const months = ['9月', '10月', '11月', '12月', '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月'];
+        // 模擬數據：呈現波動，但底部都在 300 (30萬) 以上
+        const balanceData = [320, 345, 330, 355, 410, 390, 360, 370, 365, 350, 375, 390]; 
+        const safeLine = Array(12).fill(300); 
+     
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: '總餘額 (千元)',
+                        data: balanceData,
+                        borderColor: '#D65A31', // Orange
+                        backgroundColor: 'rgba(214, 90, 49, 0.05)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    },
+                    {
+                        label: '安全水位 (AI)',
+                        data: safeLine,
+                        borderColor: '#9CA3AF', // Gray
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                    y: { display: false, min: 250 } // 隱藏 Y 軸細節，只看趨勢
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            }
+        });
+
+        // 初始化進度條
+        setTimeout(() => {
+            const bars = document.querySelectorAll('.progress-bar');
+            bars.forEach(bar => { bar.style.width = bar.style.width; });
+        }, 500);
+    });
+
+    // === Modal 試算邏輯 (保持不變) ===
+    const spotRate = 7.2500; let amount = 300000; let strike = 7.1500; const tenorDays = 30;
+    function openModal() { document.getElementById('calculationModal').classList.add('active'); updateCalculation(); }
+    function closeModal() { document.getElementById('calculationModal').classList.remove('active'); }
+    function setAmount(val) { document.getElementById('investAmount').value = val; updateCalculation(); }
+    function updateCalculation() {
+        amount = parseFloat(document.getElementById('investAmount').value) || 0;
+        strike = parseFloat(document.getElementById('strikeSlider').value);
+        document.getElementById('strikeDisplay').innerText = strike.toFixed(4);
+        document.getElementById('btnAmount').innerText = formatNumber(amount);
+        const dist = spotRate - strike;
+        let yieldRate = 3.5 + (0.2 / (dist + 0.02)); 
+        if(yieldRate > 15) yieldRate = 15; if(yieldRate < 2) yieldRate = 2;
+        document.getElementById('yieldDisplay').innerText = yieldRate.toFixed(2) + "%";
+        const interest = amount * (yieldRate / 100) * (tenorDays / 365);
+        const totalCNY = amount + interest;
+        document.getElementById('scenarioA_Result').innerText = "¥ " + formatNumber(Math.round(totalCNY))+ " CNY";
+        const totalUSD = totalCNY / strike;
+        document.getElementById('scenarioB_Result').innerText = "$ " + formatNumber(totalUSD.toFixed(2)) + " USD";
+        document.getElementById('effectiveRate').innerText = (amount / totalUSD).toFixed(4);
+    }
+    function formatNumber(num) { return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+    function showSuccess() {
+        document.getElementById('calculationModal').classList.remove('active');
+        document.getElementById('successOverlay').classList.remove('hidden');
+        document.getElementById('successOverlay').classList.add('flex');
+    }
+    // ============================
+    // 2. 理財頁面導航 (Wealth)
+    // ============================
+    let wealthHistory = [1];
+    function wealthNavigate(step, title) {
+        document.querySelectorAll('.wealth-step').forEach(el => el.classList.remove('active'));
+        document.getElementById(`wealth-step-${step}`).classList.add('active');
+        document.getElementById('header-title').innerText = title;
+        document.getElementById('back-btn').classList.remove('hidden');
+        wealthHistory.push(step);
+    }
+    function wealthGoBack() {
+        if(wealthHistory.length > 1) {
+            wealthHistory.pop();
+            const step = wealthHistory[wealthHistory.length - 1];
+            document.querySelectorAll('.wealth-step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`wealth-step-${step}`).classList.add('active');
+            if(step === 1) {
+                document.getElementById('header-title').innerText = "理財商品";
+                document.getElementById('back-btn').classList.add('hidden');
+            } else if (step === 2) {
+                document.getElementById('header-title').innerText = "組合式商品";
+            }
+        }
+    }
+
+
+    // ============================
+    // 5. 理財頁面 DCI 進階邏輯 (雙幣)
+    // ============================
+    const currencies = [
+        { code: 'USD', sym: '$', flag: '🇺🇸' },
+        { code: 'EUR', sym: '€', flag: '🇪🇺' },
+        { code: 'JPY', sym: '¥', flag: '🇯🇵' },
+        { code: 'GBP', sym: '£', flag: '🇬🇧' },
+        { code: 'AUD', sym: 'A$', flag: '🇦🇺' },
+        { code: 'NZD', sym: 'NZ$', flag: '🇳🇿' },
+        { code: 'CNY', sym: '¥', flag: '🇨🇳' },
+        { code: 'ZAR', sym: 'R', flag: '🇿🇦' }
+    ];
+
+    let baseCurrIndex = 0;   // 預設 USD
+    let linkedCurrIndex = 2; // 預設 JPY
+    let currentTenor = 7;
+    let navHistory = ['view-wealth'];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderCurrencySelectors();
+        calcDCI();
+    });
+
+    // === 2. 頁面導航 ===
+    function navigateTo(viewId, title) {
+        document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+        document.getElementById('header-title').innerText = title;
+        document.getElementById('back-btn').classList.remove('hidden');
+        navHistory.push(viewId);
+    }
+    function goBack() {
+        if(navHistory.length > 1) {
+            navHistory.pop();
+            const prev = navHistory[navHistory.length - 1];
+            document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
+            document.getElementById(prev).classList.add('active');
+            if(prev === 'view-wealth') document.getElementById('back-btn').classList.add('hidden');
+        }
+    }
+
+    // === 3. 雙幣選擇器渲染邏輯 ===
+    function renderCurrencySelectors() {
+        const baseContainer = document.getElementById('base-curr-list');
+        const linkedContainer = document.getElementById('linked-curr-list');
+        baseContainer.innerHTML = '';
+        linkedContainer.innerHTML = '';
+
+        currencies.forEach((c, idx) => {
+            // 建立 Base 按鈕
+            const baseBtn = document.createElement('button');
+            baseBtn.className = `curr-btn ${idx === baseCurrIndex ? 'active-base' : ''}`;
+            baseBtn.innerHTML = `<span class="text-lg">${c.flag}</span><span>${c.code}</span>`;
+            baseBtn.onclick = () => setBaseCurrency(idx);
+            baseContainer.appendChild(baseBtn);
+
+            // 建立 Linked 按鈕
+            const linkedBtn = document.createElement('button');
+            let linkedClass = `curr-btn ${idx === linkedCurrIndex ? 'active-linked' : ''}`;
+            if (idx === baseCurrIndex) linkedClass += ' disabled'; // 不能選一樣的
+            linkedBtn.className = linkedClass;
+            linkedBtn.innerHTML = `<span class="text-lg">${c.flag}</span><span>${c.code}</span>`;
+            linkedBtn.onclick = () => setLinkedCurrency(idx);
+            linkedContainer.appendChild(linkedBtn);
+        });
+    }
+
+    function setBaseCurrency(idx) {
+        baseCurrIndex = idx;
+        // 如果 Base 跟 Linked 一樣，自動切換 Linked
+        if (baseCurrIndex === linkedCurrIndex) {
+            linkedCurrIndex = (baseCurrIndex + 1) % currencies.length;
+        }
+        renderCurrencySelectors();
+        calcDCI();
+    }
+
+    function setLinkedCurrency(idx) {
+        linkedCurrIndex = idx;
+        renderCurrencySelectors();
+        calcDCI();
+    }
+
+    function setTenor(days, btn) {
+        currentTenor = days;
+        document.querySelectorAll('.tenor-btn').forEach(b => {
+            b.classList.remove('active-tenor', 'bg-gray-800', 'text-white');
+            b.classList.add('bg-white', 'text-gray-600');
+        });
+        btn.classList.remove('bg-white', 'text-gray-600');
+        btn.classList.add('bg-gray-800', 'text-white');
+        calcDCI();
+    }
+
+    // === 4. 核心：模擬交叉匯率與計算 ===
+    // 這是一個模擬函數，實際上應接 API
+    function getCrossRate(baseCode, linkedCode) {
+        // 定義相對於 USD 的價格 (Mock)
+        const rates = {
+            'USD': 1.0, 'EUR': 1.08, 'GBP': 1.26, 'AUD': 0.65, 'NZD': 0.60,
+            'JPY': 0.0066, 'CNY': 0.138, 'ZAR': 0.053
+        };
+        // JPY/ZAR 是反向報價習慣 (數字大)，這裡先統一轉成 USD base 計算
+        // Rate = Linked / Base ? No. 
+        // Cross Rate = Price of Base in Linked.
+        // e.g. Base=USD, Linked=JPY -> 150.
+        // e.g. Base=EUR, Linked=USD -> 1.08.
+        
+        const rateBaseToUSD = rates[baseCode];
+        const rateLinkedToUSD = rates[linkedCode];
+        
+        // 1 Base = X Linked
+        return rateBaseToUSD / rateLinkedToUSD;
+    }
+
+    function calcDCI() {
+        const base = currencies[baseCurrIndex];
+        const linked = currencies[linkedCurrIndex];
+        const amount = parseFloat(document.getElementById('dci-amount').value) || 0;
+        const sliderVal = document.getElementById('strike-slider').value;
+
+        // 更新 UI 符號
+        document.querySelectorAll('.base-symbol').forEach(el => el.innerText = base.sym);
+        document.querySelectorAll('.base-code').forEach(el => el.innerText = base.code);
+        document.querySelectorAll('.linked-code').forEach(el => el.innerText = linked.code);
+        document.getElementById('pair-name').innerText = `${base.code}/${linked.code}`;
+
+        // 1. 取得模擬匯率
+        let spot = getCrossRate(base.code, linked.code);
+        
+        // 修正部分慣例：如 USD/JPY 應為 150，非 0.0066 的倒數
+        // 簡單處理：如果結果小於 0.1 且不是主要貨幣對，取倒數？
+        // 不，統一邏輯：持有 Base，看 Linked。 Spot 代表 1 Base 能換多少 Linked。
+        
+        document.getElementById('spot-rate').innerText = spot.toFixed(4);
+
+        // 2. 計算 Strike (依據 Slider)
+        // 假設：DCI 通常是賣權，Strike 低於 Spot (看多 Base 或看區間)
+        // 積極 (Slider 100) -> Strike 貼近 Spot (e.g. 99.5%)
+        // 保守 (Slider 0) -> Strike 遠離 Spot (e.g. 95%)
+        const bufferPct = 5 * (1 - sliderVal / 100); // 0% ~ 5%
+        // 為了 Demo 簡單，假設 Strike 都是 Discount (即 Base 貶值到 Strike 才轉換？不，通常是 Linked 貶值)
+        // 修正 DCI 邏輯：
+        // 持有 USD, 連結 JPY. 此時賣 USD Call / JPY Put.
+        // 如果 USD/JPY < Strike (JPY 升值/USD 貶值), 則轉換成 JPY.
+        // 所以 Strike 應該低於 Spot.
+        
+        const strike = spot * (1 - bufferPct/100);
+        document.getElementById('strike-rate').innerText = strike.toFixed(4);
+        document.getElementById('protection-badge').innerText = `緩衝 ${bufferPct.toFixed(1)}%`;
+
+        // 3. 計算 Yield
+        let yieldRate = 2 + (sliderVal / 10) + (Math.random()); // 模擬波動
+        if (yieldRate > 15) yieldRate = 15;
+        document.getElementById('dci-yield').innerText = yieldRate.toFixed(2) + "%";
+
+        // 4. 計算結果
+        // A. 沒轉換 (Base)
+        const interest = amount * (yieldRate / 100) * (currentTenor / 365);
+        const totalBase = amount + interest;
+        document.getElementById('res-best').innerText = `${base.sym} ${formatNumber(Math.round(totalBase))}`;
+      
+        // B. 被轉換 (Linked)
+        // 邏輯：本利和 (Base) * Strike = Linked Amount
+        const totalLinked = totalBase * strike;
+        document.getElementById('res-worst').innerText = `${linked.sym} ${formatNumber(totalLinked.toFixed(2))}`;
+    }
+
+    function formatNumber(num) { return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+
+    function showSuccess(type) {
+        document.getElementById('successOverlay').classList.remove('hidden');
+        document.getElementById('successOverlay').classList.add('flex');
+        if(type === 'buy') {
+            document.getElementById('success-title').innerText = '申購成功';
+            document.getElementById('success-msg').innerText = '交易單號 #DCI-88293 已生成';
+        } else {
+            document.getElementById('success-title').innerText = '模擬倉建立';
+            document.getElementById('success-msg').innerText = '已加入觀察清單';
+        }
+    }
+    function resetToHome() { location.reload(); }
+    // ============================
+    // 6. 共用功能 (Overlay & Format)
+    // ============================
+    function formatNumber(num) { return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+    function showSuccess(type) {
+        document.getElementById('aiModal').classList.remove('active'); // 關閉 AI Modal
+        document.getElementById('successOverlay').classList.remove('hidden');
+        document.getElementById('successOverlay').classList.add('flex');
+        
+        const title = document.getElementById('success-title');
+        const msg = document.getElementById('success-msg');
+        
+        if(type === 'simulate') {
+            title.innerText = "模擬倉建立";
+            msg.innerText = "已加入您的觀察清單";
+        } else {
+            title.innerText = "申購指令已送出";
+            msg.innerText = "交易單號 #DCI-88293";
+        }
+    }
+    function resetToHome() { location.reload(); }
+  
+      // 6. Challenge Modal
+    function openChallengeModal() { document.getElementById('challengeModal').classList.add('active'); }
+    function startChallenge() {
+        document.getElementById('challengeModal').classList.remove('active');
+        showSuccess('simulate');
+        document.getElementById('success-title').innerText = "挑戰開始";
+        document.getElementById('success-msg').innerText = "已進入模擬沙盒環境...";
+    }
+
+</script>
+
+</body>
+</html>
